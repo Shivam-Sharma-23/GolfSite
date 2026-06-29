@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------------------------
+   MERIDIAN — design tokens (Tailwind v4 CSS-first config)
+   Dark cinematic base (deep green/charcoal) + single electric-lime accent.
+---------------------------------------------------------------------------- */
+@theme {
+  --color-base: #080a09;        /* page background — near-black green */
+  --color-base-2: #0b0f0d;
+  --color-surface: #0f1412;     /* cards / panels */
+  --color-surface-2: #141a16;
+  --color-line: rgba(232, 239, 230, 0.09);
+  --color-line-strong: rgba(232, 239, 230, 0.16);
+  --color-accent: #c6ff3a;      /* signature electric lime */
+  --color-accent-2: #9be81f;
+  --color-accent-dim: #5c7a16;
+  --color-fg: #eef1ea;          /* primary text */
+  --color-muted: #97a095;       /* secondary text */
+  --color-faint: #686f66;       /* tertiary text */
+
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --ease-quiet: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-precise: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background-color: var(--color-base);
+  }
+  body {
+    background-color: var(--color-base);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    font-feature-settings: "ss01", "cv01";
+  }
+  ::selection {
+    background: var(--color-accent);
+    color: #0a0d0c;
+  }
+  /* Custom scrollbar (desktop) — quiet, on-brand */
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: var(--color-base); }
+  ::-webkit-scrollbar-thumb {
+    background: #232a25;
+    border-radius: 99px;
+    border: 2px solid var(--color-base);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #303a32; }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Editorial display headline defaults */
+  .font-display {
+    font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 30, "WONK" 0;
+  }
+
+  /* Static film grain — atmospheric, NOT animated (no slop) */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .accent-glow {
+    box-shadow: 0 0 0 1px rgba(198, 255, 58, 0.18),
+      0 0 60px -12px rgba(198, 255, 58, 0.45);
+  }
+
+  /* Hairline divider used across sections */
+  .hairline { background-color: var(--color-line); }
+
+  /* Mask for SplitText line reveals */
+  .line-mask { overflow: hidden; display: block; }
+}
+
+/* ----------------------------------------------------------------------------
+   REDUCED-MOTION SAFETY NET (accessibility reference — mandatory).
+   Disables CSS animations/transitions. GSAP scroll choreography is ALSO gated
+   behind prefers-reduced-motion via gsap.matchMedia() in each component.
+   For desktop-only pinned scenes (which rely on JS to cross-fade/position
+   stacked layers), we collapse them to their static mobile fallbacks so no
+   content is ever broken or overlapping with motion disabled.
+---------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .rm-hide-desktop { display: none !important; }
+  .rm-show-mobile { display: block !important; }
+}

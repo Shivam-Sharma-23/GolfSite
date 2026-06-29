@@ -1,0 +1,181 @@
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { EASE } from "@/lib/motion";
+import { Button, Eyebrow, ArrowRight } from "./primitives";
+
+export default function Hero() {
+  const root = useRef<HTMLDivElement>(null);
+  const headline = useRef<HTMLHeadingElement>(null);
+  const textGroup = useRef<HTMLDivElement>(null);
+  const product = useRef<HTMLDivElement>(null);
+  const glow = useRef<HTMLDivElement>(null);
+  const cue = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set([textGroup.current, product.current], { opacity: 1, y: 0 });
+    });
+
+    mm.add("(min-width: 0px)", () => {
+      const tl = gsap.timeline({ delay: 0.35 });
+      tl.from(".hero-rise", { y: 22, opacity: 0, duration: 0.9, ease: EASE.out, stagger: 0.12 });
+    });
+
+    mm.add("(min-width: 1024px)", () => {
+      gsap.set([product.current, textGroup.current], { willChange: "transform, opacity" });
+
+      const tl = gsap.timeline({
+        defaults: { ease: "none" },
+        scrollTrigger: {
+          trigger: root.current,
+          start: "top top",
+          end: "+=95%",
+          scrub: 0.6,
+          pin: true,
+          anticipatePin: 1,
+        },
+      });
+
+      tl
+        .to(textGroup.current, { yPercent: -14 }, 0)
+        .to(textGroup.current, { autoAlpha: 0 }, 0.3)
+        .to(cue.current, { autoAlpha: 0, duration: 0.15 }, 0)
+        .to(".hero-chip", { autoAlpha: 0, y: -14, duration: 0.2 }, 0)
+        .to(product.current, { rotation: 11, y: 0, scale: 1.3 }, 0)
+        .to(glow.current, { scale: 1.6, autoAlpha: 0.65 }, 0)
+        .to(glow.current, { autoAlpha: 0 }, 0.85);
+    });
+
+    return () => mm.revert();
+  }, {});
+
+  return (
+    <section
+      ref={root}
+      id="top"
+      className="relative min-h-screen w-full bg-base"
+    >
+      {/* Ambient layers (static, atmospheric — no looping motion) */}
+      <div
+        ref={glow}
+        className="pointer-events-none absolute left-1/2 top-[42%] h-[70vw] w-[70vw] max-h-[760px] max-w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-70"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(198,255,58,0.16) 0%, rgba(198,255,58,0.05) 38%, transparent 68%)",
+          filter: "blur(20px)",
+        }}
+      />
+      <Topo className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.5]" />
+
+      {/* Vertical editorial side label */}
+      <span className="pointer-events-none absolute left-4 top-1/2 hidden -translate-y-1/2 rotate-180 text-[0.62rem] uppercase tracking-[0.4em] text-faint [writing-mode:vertical-rl] lg:block">
+        Tour Series · Est. 2026
+      </span>
+
+      <div className="relative mx-auto grid min-h-screen max-w-[1400px] grid-cols-1 items-center gap-10 px-5 pb-16 pt-28 sm:px-8 lg:grid-cols-12 lg:gap-6 lg:pt-24">
+        {/* ---- Copy ---- */}
+        <div ref={textGroup} className="relative z-10 lg:col-span-6 lg:col-start-1">
+          <div className="hero-rise">
+            <Eyebrow>2026 Tour Series</Eyebrow>
+          </div>
+
+          <h1
+            ref={headline}
+            className="mt-6 font-display text-[clamp(2.7rem,7vw,5.6rem)] font-light leading-[1.04] tracking-[-0.02em] text-fg"
+          >
+            Distance,
+            <br />
+            dialed to perfection.
+          </h1>
+
+          <p className="hero-rise mt-7 max-w-md text-[1.02rem] leading-relaxed text-muted">
+            Aerodynamically forged drivers, milled irons, and tour-grade balls —
+            engineered in the workshop, proven under pressure on Sunday.
+          </p>
+
+          <div className="hero-rise mt-9 flex flex-wrap items-center gap-3">
+            <Button href="#lineup" variant="primary">
+              Explore the line
+              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Button>
+            <Button href="#flight" variant="ghost">
+              See the flight
+            </Button>
+          </div>
+
+          {/* Quiet spec strip */}
+          <div className="hero-rise mt-12 flex flex-wrap gap-x-8 gap-y-3 border-t border-line pt-6">
+            {[
+              ["Ball speed", "+4.2 mph"],
+              ["Forgiveness", "10k MOI"],
+              ["Tour wins", "37"],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <div className="font-display text-xl text-fg">{v}</div>
+                <div className="text-[0.68rem] uppercase tracking-[0.2em] text-faint">{k}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ---- Product stage ---- */}
+        <div className="relative lg:col-span-6">
+            <div ref={product} className="relative mx-auto aspect-[4/5] w-full max-w-[540px]">
+            <img
+              src="/images/hero-driver.png"
+              alt="Meridian Tour Series driver, matte black with carbon crown"
+              className="h-full w-full object-contain"
+              style={{
+                maskImage:
+                  "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
+                WebkitMaskImage:
+                  "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
+              }}
+            />
+            {/* Floating spec chips */}
+            <div className="hero-chip absolute left-0 top-[16%] rounded-full border border-line bg-surface/70 px-3 py-1.5 text-[0.7rem] font-medium text-fg backdrop-blur-sm">
+              460cc · C300 face
+            </div>
+            <div className="hero-chip absolute right-1 top-[44%] rounded-full border border-line bg-surface/70 px-3 py-1.5 text-[0.7rem] font-medium text-fg backdrop-blur-sm">
+              10.5° loft
+            </div>
+            <div className="hero-chip absolute bottom-[14%] left-[12%] rounded-full border border-line bg-surface/70 px-3 py-1.5 text-[0.7rem] font-medium text-fg backdrop-blur-sm">
+              Adjustable ±2°
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scroll cue — static, not pulsing */}
+      <div
+        ref={cue}
+        className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-faint md:flex"
+      >
+        <span className="text-[0.62rem] uppercase tracking-[0.3em]">Scroll</span>
+        <span className="h-10 w-px bg-gradient-to-b from-line-strong to-transparent" />
+      </div>
+    </section>
+  );
+}
+
+/* Faint topographic contour field — aerodynamic / precision motif (static). */
+function Topo({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g fill="none" stroke="rgba(232,239,230,0.05)" strokeWidth="1">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <path
+            key={i}
+            d={`M -100 ${260 + i * 70} C 360 ${180 + i * 70}, 1080 ${360 + i * 70}, 1560 ${200 + i * 70}`}
+          />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+// keep ScrollTrigger reference warm (registered once in lib/gsap)
+void ScrollTrigger;
