@@ -63,7 +63,7 @@ export default function App() {
       gsap.utils.toArray<HTMLElement>(".section-fade").forEach((sec) => {
         gsap.fromTo(
           sec,
-          { opacity: 0.2, y: 48 },
+          { opacity: 0.8, y: 48 },
           {
             opacity: 1,
             y: 0,
@@ -80,7 +80,7 @@ export default function App() {
           sec,
           { opacity: 1, y: 0 },
           {
-            opacity: 0.25,
+            opacity: 0.8,
             y: -32,
             ease: "none",
             immediateRender: false,
