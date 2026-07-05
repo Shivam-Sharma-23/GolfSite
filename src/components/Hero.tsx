@@ -19,12 +19,67 @@ export default function Hero() {
       gsap.set([textGroup.current, product.current], { opacity: 1, y: 0 });
     });
 
-    // Below lg, skip the JS entrance fade entirely — content is visible
-    // immediately. On real mobile devices the delayed/staggered .from()
-    // tween could leave the copy stuck at its (opacity:0) starting state,
-    // reading as "missing" paragraph/buttons/spec-strip.
+    // Below lg: run the SAME scroll choreography as desktop, but scrubbed to
+    // the hero's natural scroll-through instead of pinned. The mobile hero is a
+    // stacked column taller than the viewport, so pinning would animate the
+    // product off-screen and lengthen the page — scrubbing keeps every layout
+    // dimension identical. `body { overflow-x: hidden }` (index.css) means the
+    // product scale can never introduce a horizontal scrollbar.
+    //
+    // The entrance .from() is deliberately NOT used here: on real mobile devices
+    // a delayed/staggered .from() can leave the copy stuck at its (opacity:0)
+    // start state, reading as "missing" paragraph/buttons/spec-strip. Copy stays
+    // visible immediately; only scroll-tied motion is added on top.
     mm.add("(max-width: 1023px)", () => {
       gsap.set(".hero-rise", { opacity: 1, y: 0 });
+
+      // Copy: translate + fade parallax as it scrolls off the top. Transform +
+      // opacity only (GPU-cheap); a .to() so the resting state is fully visible.
+      gsap.to(textGroup.current, {
+        yPercent: -8,
+        autoAlpha: 0,
+        ease: "none",
+        scrollTrigger: {
+          trigger: textGroup.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: 0.5,
+        },
+      });
+
+      // Product: subtle rotate + drift while it rides through the viewport —
+      // the same lightweight parallax pattern the Showcase/Tech images use.
+      // Deliberately NO scale, and the blurred glow is left static: scaling a
+      // blur/backdrop layer every scroll frame was the jank, and scaling the
+      // product past its box was what looked like the layout "distorting".
+      // Translate + rotate never touch document flow, so no dimension shifts.
+      gsap.fromTo(
+        product.current,
+        { rotation: 0, yPercent: 5 },
+        {
+          rotation: 5,
+          yPercent: -5,
+          ease: "none",
+          scrollTrigger: {
+            trigger: product.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 0.5,
+          },
+        }
+      );
+
+      // Scroll cue (visible md+ only) fades on first scroll — cheap opacity tween.
+      gsap.to(cue.current, {
+        autoAlpha: 0,
+        ease: "none",
+        scrollTrigger: {
+          trigger: root.current,
+          start: "top top",
+          end: "top -8%",
+          scrub: true,
+        },
+      });
     });
 
     mm.add("(min-width: 1024px)", () => {
@@ -130,17 +185,21 @@ export default function Hero() {
         {/* ---- Product stage ---- */}
         <div className="relative lg:col-span-6">
             <div ref={product} className="relative mx-auto aspect-[4/5] w-full max-w-[540px]">
-            <img
-              src="/images/hero-driver.png"
-              alt="Meridian Tour Series driver, matte black with carbon crown"
-              className="h-full w-full object-contain"
-              style={{
-                maskImage:
-                  "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
-                WebkitMaskImage:
-                  "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
-              }}
-            />
+            {/* Clip the tilted image to the box so its rotated corners can't
+                spill past the layout and change the page dimensions. */}
+            <div className="absolute inset-0 overflow-hidden">
+              <img
+                src="/images/hero-driver.png"
+                alt="Meridian Tour Series driver, matte black with carbon crown"
+                className="h-full w-full rotate-[6deg] object-contain"
+                style={{
+                  maskImage:
+                    "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
+                  WebkitMaskImage:
+                    "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
+                }}
+              />
+            </div>
             {/* Floating spec chips */}
             <div className="hero-chip absolute left-0 top-[16%] rounded-full border border-line bg-surface/70 px-3 py-1.5 text-[0.7rem] font-medium text-fg backdrop-blur-sm">
               460cc · C300 face

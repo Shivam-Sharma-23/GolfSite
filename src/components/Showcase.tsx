@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "@/lib/gsap";
 import { EASE } from "@/lib/motion";
-import { Eyebrow, PlusIcon, SplitLines } from "./primitives";
+import { Eyebrow, ArrowRight, SplitLines } from "./primitives";
 
 type Product = {
   n: string;
@@ -110,24 +110,29 @@ export default function Showcase() {
                 </span>
               </div>
 
-              <div className="flex items-end justify-between gap-4 p-5">
-                <div>
-                  <div className="text-[0.68rem] uppercase tracking-[0.22em] text-accent">
-                    {p.category}
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-[0.68rem] uppercase tracking-[0.22em] text-accent">
+                      {p.category}
+                    </div>
+                    <h3 className="mt-1.5 font-display text-xl text-fg">{p.name}</h3>
+                    <p className="mt-1 text-[0.8rem] text-muted">{p.spec}</p>
                   </div>
-                  <h3 className="mt-1.5 font-display text-xl text-fg">{p.name}</h3>
-                  <p className="mt-1 text-[0.8rem] text-muted">{p.spec}</p>
+                  <span className="shrink-0 text-sm font-medium text-fg">{p.price}</span>
                 </div>
-                <div className="flex flex-col items-end gap-3">
-                  <span className="text-sm font-medium text-fg">{p.price}</span>
-                  <button
-                    type="button"
-                    aria-label={`Add ${p.name} to bag`}
-                    className="grid h-10 w-10 place-items-center rounded-full border border-line-strong text-fg transition-[background-color,border-color] duration-200 ease-[var(--ease-quiet)] hover:border-accent hover:bg-accent hover:text-base"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                  </button>
-                </div>
+
+                {/* Product CTA — full-width, fills accent on hover (matches the
+                    card interaction language; primary lift is reserved for the
+                    page-level CTAs, not repeated on every card). */}
+                <button
+                  type="button"
+                  aria-label={`Add ${p.name} to bag`}
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line-strong px-5 py-3 text-[0.88rem] font-medium text-fg transition-[background-color,border-color,color,transform] duration-200 ease-[var(--ease-quiet)] hover:border-accent hover:bg-accent hover:text-base active:scale-[0.98]"
+                >
+                  Add to Bag
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </button>
               </div>
             </article>
           ))}
