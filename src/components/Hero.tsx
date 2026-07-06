@@ -3,29 +3,25 @@ import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { EASE } from "@/lib/motion";
 import { Button, Eyebrow, ArrowRight } from "./primitives";
+import { PRELOADER_DONE_EVENT } from "./Preloader";
 
 export default function Hero() {
   const root = useRef<HTMLDivElement>(null);
   const headline = useRef<HTMLHeadingElement>(null);
   const textGroup = useRef<HTMLDivElement>(null);
-  const product = useRef<HTMLDivElement>(null);
   const glow = useRef<HTMLDivElement>(null);
   const cue = useRef<HTMLDivElement>(null);
-  const video = useRef<HTMLVideoElement>(null);
 
   useGSAP(() => {
     const mm = gsap.matchMedia();
 
     mm.add("(prefers-reduced-motion: reduce)", () => {
-      gsap.set([textGroup.current, product.current], { opacity: 1, y: 0 });
+      gsap.set(textGroup.current, { opacity: 1, y: 0 });
     });
 
     // Below lg: run the SAME scroll choreography as desktop, but scrubbed to
-    // the hero's natural scroll-through instead of pinned. The mobile hero is a
-    // stacked column taller than the viewport, so pinning would animate the
-    // product off-screen and lengthen the page — scrubbing keeps every layout
-    // dimension identical. `body { overflow-x: hidden }` (index.css) means the
-    // product scale can never introduce a horizontal scrollbar.
+    // the hero's natural scroll-through instead of pinned, keeping every layout
+    // dimension identical.
     //
     // The entrance .from() is deliberately NOT used here: on real mobile devices
     // a delayed/staggered .from() can leave the copy stuck at its (opacity:0)
@@ -48,28 +44,6 @@ export default function Hero() {
         },
       });
 
-      // Product: subtle rotate + drift while it rides through the viewport —
-      // the same lightweight parallax pattern the Showcase/Tech images use.
-      // Deliberately NO scale, and the blurred glow is left static: scaling a
-      // blur/backdrop layer every scroll frame was the jank, and scaling the
-      // product past its box was what looked like the layout "distorting".
-      // Translate + rotate never touch document flow, so no dimension shifts.
-      gsap.fromTo(
-        product.current,
-        { rotation: 0, yPercent: 5 },
-        {
-          rotation: 5,
-          yPercent: -5,
-          ease: "none",
-          scrollTrigger: {
-            trigger: product.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 0.5,
-          },
-        }
-      );
-
       // Scroll cue (visible md+ only) fades on first scroll — cheap opacity tween.
       gsap.to(cue.current, {
         autoAlpha: 0,
@@ -84,10 +58,19 @@ export default function Hero() {
     });
 
     mm.add("(min-width: 1024px)", () => {
-      const entrance = gsap.timeline({ delay: 0.35 });
+      // Hero entrance is held paused until the intro curtain begins lifting, so
+      // the copy rises in as the site is revealed — not unseen underneath it.
+      const entrance = gsap.timeline({ paused: true });
       entrance.from(".hero-rise", { y: 22, opacity: 0, duration: 0.9, ease: EASE.out, stagger: 0.12 });
 
-      gsap.set([product.current, textGroup.current], { willChange: "transform, opacity" });
+      const play = () => entrance.play();
+      if (window.__meridianRevealed) {
+        entrance.delay(0.15).play();
+      } else {
+        window.addEventListener(PRELOADER_DONE_EVENT, play, { once: true });
+      }
+
+      gsap.set(textGroup.current, { willChange: "transform, opacity" });
 
       const tl = gsap.timeline({
         defaults: { ease: "none" },
@@ -105,49 +88,13 @@ export default function Hero() {
         .to(textGroup.current, { yPercent: -14 }, 0)
         .to(textGroup.current, { autoAlpha: 0 }, 0.3)
         .to(cue.current, { autoAlpha: 0, duration: 0.15 }, 0)
-        .to(".hero-chip", { autoAlpha: 0, y: -14, duration: 0.2 }, 0)
-        .to(product.current, { rotation: 11, y: 0, scale: 1.3 }, 0)
         .to(glow.current, { scale: 1.6, autoAlpha: 0.65 }, 0)
         .to(glow.current, { autoAlpha: 0 }, 0.85);
 
-      // Scroll-scrubbed background video: drive currentTime from the SAME pinned
-      // timeline so the clip runs forward on scroll-down and backward on scroll-up.
-      // `duration: tl.duration()` at position 0 stretches the seek across the WHOLE
-      // pin, so the clip plays start→finish exactly as the hero scrolls through and
-      // hits its last frame right as the section unpins and the page moves on.
-      // Adding it at position 0 with the current total duration doesn't lengthen
-      // the timeline. `() => v.duration` is a function-based end so it re-reads the
-      // real duration on ScrollTrigger.refresh() once metadata has loaded.
-      const v = video.current;
-      if (v) {
-        const span = tl.duration();
-        const scrubState = { t: 0 };
-        tl.to(
-          scrubState,
-          {
-            t: () => v.duration || 0,
-            duration: span,
-            ease: "none",
-            onUpdate: () => {
-              if (v.readyState >= 1) v.currentTime = scrubState.t;
-            },
-          },
-          0
-        );
-      }
+      return () => window.removeEventListener(PRELOADER_DONE_EVENT, play);
     });
 
-    // Pin distance and the duration-based video tween are only correct once the
-    // video's metadata (and thus its intrinsic duration) is known — refresh then.
-    const v = video.current;
-    const onMeta = () => ScrollTrigger.refresh();
-    if (v) {
-      if (v.readyState >= 1) ScrollTrigger.refresh();
-      else v.addEventListener("loadedmetadata", onMeta, { once: true });
-    }
-
     return () => {
-      v?.removeEventListener("loadedmetadata", onMeta);
       mm.revert();
     };
   }, {});
@@ -158,22 +105,24 @@ export default function Hero() {
       id="top"
       className="relative min-h-screen w-full bg-base"
     >
-      {/* Scroll-scrubbed background video — backmost layer. Muted + playsInline
-          so mobile browsers allow programmatic seeking; the poster (and, below
-          lg, the natural absence of the scrub) keeps a static frame on phones.
-          Drop the asset at public/videos/hero.mp4 (+ hero-poster.jpg). */}
-      <video
-        ref={video}
-        src="/videos/hero.mp4"
-        poster="/videos/hero-poster.jpg"
-        muted
-        playsInline
-        preload="auto"
+      {/* Background image — backmost layer. Two art-directed crops: a tight
+          landscape frame on desktop, a full-body portrait on phones. */}
+      <img
+        src="/images/hero-bg-desktop.png"
+        alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-60"
+        className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center opacity-60 lg:block"
       />
-      {/* Scrim: keeps the copy legible over arbitrary video content. */}
+      <img
+        src="/images/hero-bg-mobile.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-60 lg:hidden"
+      />
+      {/* Scrim: horizontal fade keeps the left-hand copy legible over the image;
+          the extra vertical wash gives stacked mobile copy its own contrast. */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-base via-base/70 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-base/70 via-transparent to-base/70 lg:hidden" />
 
       {/* Ambient layers (static, atmospheric — no looping motion) */}
       <div
@@ -238,36 +187,6 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* ---- Product stage ---- */}
-        <div className="relative lg:col-span-6">
-            <div ref={product} className="relative mx-auto aspect-[4/5] w-full max-w-[540px]">
-            {/* Clip the tilted image to the box so its rotated corners can't
-                spill past the layout and change the page dimensions. */}
-            <div className="absolute inset-0 overflow-hidden">
-              <img
-                src="/images/hero-driver.png"
-                alt="Meridian Tour Series driver, matte black with carbon crown"
-                className="h-full w-full rotate-[6deg] object-contain"
-                style={{
-                  maskImage:
-                    "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
-                  WebkitMaskImage:
-                    "radial-gradient(ellipse 72% 70% at 50% 44%, #000 58%, transparent 84%)",
-                }}
-              />
-            </div>
-            {/* Floating spec chips */}
-            <div className="hero-chip absolute left-0 top-[16%] rounded-full border border-line bg-surface/70 px-3 py-1.5 text-[0.7rem] font-medium text-fg backdrop-blur-sm">
-              460cc · C300 face
-            </div>
-            <div className="hero-chip absolute right-1 top-[44%] rounded-full border border-line bg-surface/70 px-3 py-1.5 text-[0.7rem] font-medium text-fg backdrop-blur-sm">
-              10.5° loft
-            </div>
-            <div className="hero-chip absolute bottom-[14%] left-[12%] rounded-full border border-line bg-surface/70 px-3 py-1.5 text-[0.7rem] font-medium text-fg backdrop-blur-sm">
-              Adjustable ±2°
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Scroll cue — static, not pulsing */}

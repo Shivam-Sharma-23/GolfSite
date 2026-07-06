@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
+import Preloader from "@/components/Preloader";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import BallFlight from "@/components/BallFlight";
@@ -121,6 +122,9 @@ export default function App() {
 
   return (
     <div className="grain relative">
+      {/* Intro curtain — reveals the site once its count completes */}
+      <Preloader />
+
       {/* Scroll progress */}
       <div
         ref={progress}
